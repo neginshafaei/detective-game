@@ -1,42 +1,32 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
-import {
-  RoomProvider,
-  ClientSideSuspense,
-  useStorage,
-  useMutation,
-  LiveblocksProvider,
-} from "@liveblocks/react/suspense";
-import { LiveList, LiveObject } from "@liveblocks/client";
+import { useStorage, useMutation } from "@liveblocks/react/suspense";
+import { LiveObject } from "@liveblocks/client";
 import EvidenceCard from "./EvidenceCard";
 import { supabase } from "@/lib/supabase";
+import EvidenceModal from "./EvidenceModal";
+import Briefing from "./Briefing";
+import DetectiveSidebar from "./DetectiveSidebar";
 
 function Board({ roomId }) {
   const boardRef = useRef(null);
   const evidenceList = useStorage((root) => root.evidence);
 
-  const [cards, setCards] = useState([]);
+  const [activeTab, setActiveTab] = useState("text");
   const [isLoadingDb, setIsLoadingDb] = useState(true);
   const [dbError, setDbError] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [showBriefing, setShowBriefing] = useState(true);
 
   const replaceEvidence = useMutation(({ storage }, dbCards) => {
     const list = storage.get("evidence");
     if (!list) return;
-
     if (list.size === dbCards.length && dbCards.length > 0) {
       const firstDbId = dbCards[0]?.id;
       const firstListId = list.get(0)?.get("id");
-      if (firstDbId === firstListId) {
-        console.log(
-          "Liveblocks storage already synced with DB, skipping replace",
-        );
-        return;
-      }
+      if (firstDbId === firstListId) return;
     }
-
-    console.log("Syncing DB to Liveblocks - count:", dbCards.length);
     list.clear();
-
     dbCards.forEach((card) => {
       list.push(
         new LiveObject({
@@ -51,6 +41,7 @@ function Board({ roomId }) {
       );
     });
   }, []);
+
   const updateCardPosition = useMutation(({ storage }, id, newX, newY) => {
     const list = storage.get("evidence");
     const cardIndex = list.findIndex((item) => item.get("id") === id);
@@ -63,113 +54,78 @@ function Board({ roomId }) {
 
   useEffect(() => {
     if (!roomId) return;
-
-    let isMounted = true;
-
     const fetchCards = async () => {
       setIsLoadingDb(true);
-      setDbError(null);
-
       try {
         const { data, error } = await supabase
           .from("evidence_cards")
           .select("*")
           .eq("case_id", roomId)
           .order("updated_at", { ascending: false });
-
-        if (error) throw error;
-
-        console.log("Fetched cards from Supabase:", data?.length || 0);
-
-        if (isMounted && data?.length > 0) {
-          replaceEvidence(data);
-        }
+        if (!error && data) replaceEvidence(data);
       } catch (err) {
-        if (isMounted) {
-          setDbError(err.message || "خطا در بارگذاری");
-          console.error(err);
-        }
+        setDbError(err.message);
       } finally {
-        if (isMounted) setIsLoadingDb(false);
+        setIsLoadingDb(false);
       }
     };
-
     fetchCards();
+  }, [roomId, replaceEvidence]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [roomId]);
+  const allCards = evidenceList ? Array.from(evidenceList) : [];
+  const filteredCards = allCards.filter(
+    (doc) => (doc.get ? doc.get("type") : doc.type) === activeTab,
+  );
 
-  if (isLoadingDb) {
+  if (showBriefing) return <Briefing onStart={() => setShowBriefing(false)} />;
+  if (isLoadingDb)
     return (
-      <div className="h-screen bg-[#121212] text-amber-100 p-10 flex items-center justify-center">
-        در حال بارگذاری مدارک از Supabase...
+      <div className="h-screen bg-[#121212] text-amber-100 flex items-center justify-center">
+        در حال چیدن میز کارآگاه...
       </div>
     );
-  }
-
-  if (dbError) {
-    return (
-      <div className="h-screen bg-[#121212] text-red-400 p-10 flex items-center justify-center">
-        خطا: {dbError}
-      </div>
-    );
-  }
 
   return (
-    <div className="relative w-full h-screen bg-[#121212] overflow-hidden p-10 flex flex-col">
-      <div className="z-10 flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-serif text-amber-100 uppercase">
-            پرونده عمارت سامور
-          </h1>
-          <p className="text-green-500 text-[10px] animate-pulse">
-            ● سیستم ریل‌تایم فعال است
-          </p>
+    <div className="flex flex-1 overflow-hidden h-full relative">
+      <div className="relative flex-1 bg-[#1e1e1e] rounded-lg border-2 border-[#2a2a2a] overflow-hidden shadow-2xl ml-4 md:ml-10 mr-2 md:mr-6 mb-10 mt-2">
+        <div ref={boardRef} className="absolute inset-0 w-full h-full">
+          {filteredCards.map((doc) => {
+            const data = doc.toJSON ? doc.toJSON() : doc;
+            return (
+              <EvidenceCard
+                key={data.id}
+                doc={data}
+                containerRef={boardRef}
+                onMove={(id, x, y) => updateCardPosition(id, x, y)}
+                onSelect={() => setSelectedCard(data)}
+              />
+            );
+          })}
+        </div>
+
+        <div className="absolute top-4 left-4 pointer-events-none opacity-10 select-none">
+          <span className="text-2xl md:text-5xl font-serif text-white uppercase tracking-tighter block">
+            {activeTab === "text" ? "Field Reports" : "Visual Archive"}
+          </span>
         </div>
       </div>
 
-      <div
-        ref={boardRef}
-        className="relative flex-1 bg-[#1e1e1e] rounded-lg border-2 border-[#2a2a2a] overflow-hidden shadow-2xl"
-      >
-        {evidenceList.map((doc) => (
-          <EvidenceCard
-            key={doc.id}
-            doc={doc.toJSON ? doc.toJSON() : doc}
-            containerRef={boardRef}
-            onMove={(id, x, y) => updateCardPosition(id, x, y)}
-          />
-        ))}
-      </div>
+      <DetectiveSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        textCount={
+          allCards.filter((c) => (c.get ? c.get("type") : c.type) === "text")
+            .length
+        }
+        imageCount={
+          allCards.filter((c) => (c.get ? c.get("type") : c.type) === "image")
+            .length
+        }
+      />
+
+      <EvidenceModal doc={selectedCard} onClose={() => setSelectedCard(null)} />
     </div>
   );
 }
 
-export default function DetectiveBoardWrapper({
-  roomId = "my-detective-room-1",
-}) {
-  return (
-    <LiveblocksProvider
-      publicApiKey={process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY}
-    >
-      <RoomProvider
-        id={roomId}
-        initialStorage={{
-          evidence: new LiveList([]),
-        }}
-      >
-        <ClientSideSuspense
-          fallback={
-            <div className="h-screen bg-[#121212] text-amber-100 p-10 flex items-center justify-center">
-              در حال اتصال به realtime و لود مدارک...
-            </div>
-          }
-        >
-          {() => <Board roomId={roomId} />}
-        </ClientSideSuspense>
-      </RoomProvider>
-    </LiveblocksProvider>
-  );
-}
+export default Board;
