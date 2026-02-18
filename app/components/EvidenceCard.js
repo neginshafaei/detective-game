@@ -1,32 +1,52 @@
 "use client";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 
 const EvidenceCard = ({ doc, onMove, containerRef }) => {
   const cardRef = useRef(null);
+  const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
   const [constraints, setConstraints] = useState({
-    top: 40,
-    left: 40,
-    right: 40,
-    bottom: 40,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   });
 
   useEffect(() => {
-    if (containerRef.current && cardRef.current) {
-      const board = containerRef.current.getBoundingClientRect();
-      const card = cardRef.current.getBoundingClientRect();
-      const MARGIN = 40;
+    const updateConstraints = () => {
+      if (containerRef.current && cardRef.current) {
+        const board = containerRef.current.getBoundingClientRect();
+        const card = cardRef.current.getBoundingClientRect();
+        const MARGIN = 20;
 
-      setConstraints({
-        top: MARGIN,
-        left: MARGIN,
-        right: board.width - card.width - MARGIN,
-        bottom: board.height - card.height - MARGIN,
-      });
-    }
+        setBoardSize({ width: board.width, height: board.height });
+        setConstraints({
+          top: MARGIN,
+          left: MARGIN,
+          right: board.width - card.width - MARGIN,
+          bottom: board.height - card.height - MARGIN,
+        });
+      }
+    };
+
+    updateConstraints();
+    window.addEventListener("resize", updateConstraints);
+    return () => window.removeEventListener("resize", updateConstraints);
   }, [containerRef]);
-console.log("Rendering EvidenceCard for id:", doc.id);
+
+  const safePos = useMemo(() => {
+    if (boardSize.width === 0) return { x: doc.x, y: doc.y };
+
+    const cardWidth = 208;
+    const cardHeight = 250;
+
+    return {
+      x: Math.min(Math.max(20, doc.x), boardSize.width - cardWidth - 20),
+      y: Math.min(Math.max(20, doc.y), boardSize.height - cardHeight - 20),
+    };
+  }, [doc.x, doc.y, boardSize]);
+
   const handleDragEnd = (event, info) => {
     if (!containerRef.current || !cardRef.current) return;
 
@@ -46,12 +66,8 @@ console.log("Rendering EvidenceCard for id:", doc.id);
         updated_at: new Date().toISOString(),
       })
       .eq("id", doc.id)
-      .then(() => {
-        console.log("Position saved to Supabase");
-      })
-      .catch((err) => {
-        console.error("Supabase save error:", err);
-      });
+      .then(() => console.log("Position saved"))
+      .catch((err) => console.error("Supabase save error:", err));
   };
 
   return (
@@ -61,12 +77,13 @@ console.log("Rendering EvidenceCard for id:", doc.id);
       dragMomentum={false}
       dragConstraints={constraints}
       dragElastic={0}
-      animate={{ x: doc.x, y: doc.y, rotate: doc.rotation }}
-      transition={{ type: "spring", stiffness: 250, damping: 30 }}
+      animate={{ x: safePos.x, y: safePos.y, rotate: doc.rotation }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
       style={{
         position: "absolute",
         left: 0,
         top: 0,
+        touchAction: "none",
       }}
       onDragEnd={handleDragEnd}
       whileDrag={{
@@ -75,9 +92,9 @@ console.log("Rendering EvidenceCard for id:", doc.id);
         rotate: 0,
         boxShadow: "0px 20px 50px rgba(0,0,0,0.5)",
       }}
-      className="cursor-grab active:cursor-grabbing"
+      className="cursor-grab active:cursor-grabbing touch-none"
     >
-      <div className="relative w-52 bg-[#f4f1ea] p-4 shadow-lg border border-black/5 flex flex-col gap-2 pointer-events-none">
+      <div className="relative w-52 bg-[#f4f1ea] p-4 shadow-lg border border-black/5 flex flex-col gap-2 pointer-events-none select-none">
         <div className="text-[10px] uppercase text-red-900 font-bold opacity-70">
           Case File No. {doc.id}
         </div>
@@ -94,6 +111,7 @@ console.log("Rendering EvidenceCard for id:", doc.id);
               src={doc.content}
               className="w-full h-full object-cover"
               alt="evidence"
+              draggable="false"
             />
           </div>
         )}

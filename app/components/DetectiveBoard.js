@@ -23,7 +23,6 @@ function Board({ roomId }) {
     const list = storage.get("evidence");
     if (!list) return;
 
-    // اگر تعداد کارت‌ها برابر بود و اولین id مطابقت داشت، جایگزین نکن
     if (list.size === dbCards.length && dbCards.length > 0) {
       const firstDbId = dbCards[0]?.id;
       const firstListId = list.get(0)?.get("id");
