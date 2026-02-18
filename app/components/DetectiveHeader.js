@@ -79,7 +79,7 @@ export default function DetectiveHeader() {
 
       {showAddModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#1e1e1e] p-6 rounded-lg w-96 border border-amber-500/20">
+          <div className="bg-[#1e1e1e] p-6 w-full max-w-2xl mx-2 rounded-lg border border-amber-500/20">
             <h2 className="text-amber-100 mb-4 font-serif">ثبت یادداشت جدید</h2>
             <textarea
               className="w-full h-32 bg-[#121212] text-white p-3 rounded border border-white/10 outline-none focus:border-amber-500 text-sm"
@@ -113,7 +113,7 @@ export default function DetectiveHeader() {
 
       {showHistory && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#1e1e1e] p-6 rounded-lg w-112.5 max-h-[80vh] flex flex-col border border-white/10">
+          <div className="bg-[#1e1e1e] p-6 rounded-lg w-full max-w-2xl mx-2 max-h-[80vh] flex flex-col border border-white/10">
             <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
               <h2 className="text-amber-100 font-serif">تاریخچه یادداشت‌ها</h2>
               <button

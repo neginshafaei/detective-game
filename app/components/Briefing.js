@@ -11,7 +11,7 @@ export default function Briefing({ onStart }) {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
-        className="relative max-w-2xl w-full space-y-8 border border-amber-900/20 p-8 md:p-12 bg-[#0a0a0a] shadow-[0_0_100px_rgba(120,50,0,0.1)]"
+        className="relative max-w-2xl w-full space-y-8 border border-amber-900/20 p-4 md:p-12 bg-[#0a0a0a] shadow-[0_0_100px_rgba(120,50,0,0.1)]"
       >
         <div className="absolute -top-4 -right-4 bg-red-900 text-white text-[10px] px-6 py-1 rotate-12 font-mono font-bold uppercase tracking-[0.3em] shadow-lg">
           Top Secret
@@ -21,13 +21,13 @@ export default function Briefing({ onStart }) {
           <h2 className="text-red-800 text-[10px] font-mono tracking-[0.6em] uppercase mb-2">
             Intelligence Briefing / Case #77-B
           </h2>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-amber-50">
+          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-amber-50">
             پرونده عمارت سامور
           </h1>
         </div>
 
         <div
-          className="space-y-6 text-base md:text-lg leading-relaxed text-amber-100/70 italic text-right"
+          className="space-y-4 text-sm md:text-lg leading-relaxed text-amber-100/70 italic text-right"
           dir="rtl"
         >
           <p className="border-r-2 border-amber-900/30 pr-4">
@@ -46,7 +46,7 @@ export default function Briefing({ onStart }) {
           </p>
         </div>
 
-        <div className="flex flex-col items-center gap-4 pt-6">
+        <div className="flex flex-col items-center gap-4 pt-4">
           <motion.button
             whileHover={{
               scale: 1.05,

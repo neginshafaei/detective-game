@@ -13,7 +13,7 @@ export default function DetectiveSidebar({
   ];
 
   return (
-    <div className="w-16 md:w-48 bg-[#121212] flex flex-col gap-2 p-2 pt-2 border-r border-white/5 shadow-2xl z-30">
+    <div className="w-16 md:w-48 bg-[#121212] flex flex-col gap-2 p-2 pt-2 border-r border-white/5 shadow-2xl z-10">
       <div className="mb-4 px-2 hidden md:block">
         <span className="text-[10px] text-amber-900 font-mono font-black uppercase tracking-widest leading-none">
           Archive System v1.0
